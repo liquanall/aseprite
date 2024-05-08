@@ -6,12 +6,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
-        build_type: [RelWithDebInfo, Debug]
-        enable_ui: [off]
+        os: [windows-latest]
+        build_type: [Release]
+        enable_ui: [on]
         include:
-          - os: ubuntu-latest
-            build_type: Debug
+          - os: windows-latest
+            build_type: Release
             enable_ui: on
     steps:
     - uses: actions/checkout@v4
@@ -37,6 +37,8 @@ jobs:
           sudo apt-get install -y \
             libx11-dev libxcursor-dev libxi-dev
         fi
+        unzip -d ./skia Skia-Windows-Release-x64.zip
+        unzip -d ./dll dll.zip
     - name: Generating Makefiles
       shell: bash
       run: |
@@ -50,11 +52,22 @@ jobs:
           -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
           -DENABLE_TESTS=ON \
           -DENABLE_UI=${{ matrix.enable_ui }} \
-          -DENABLE_CCACHE=$enable_ccache
+          -DENABLE_CCACHE=$enable_ccache \
+          -DLAF_BACKEND=skia \
+          -DSKIA_DIR=./skia \
+          -DSKIA_LIBRARY_DIR=./skia/out/Release-x64 \
+          -DSKIA_LIBRARY=./skia/out/Release-x64/skia.lib
     - name: Compiling
       shell: bash
       run: |
         cd build && ninja
+    - uses: actions/upload-artifact@v4
+      with:
+        name: aseprite
+        path: |
+          D:/a/aseprite/aseprite/dll/libcrypto-1_1-x64.dll
+          D:/a/aseprite/aseprite/build/bin/data
+          D:/a/aseprite/aseprite/build/bin/aseprite.exe
     - name: Running C++ Tests
       shell: bash
       run: |
